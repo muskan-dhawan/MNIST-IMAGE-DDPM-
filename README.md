@@ -1,4 +1,4 @@
-MNIST Image Generation using DDPM
+### MNIST Image Generation using DDPM
 An end-to-end generative AI project that implements a Denoising Diffusion Probabilistic Model (DDPM) to generate handwritten digits from the MNIST dataset. The project features a trained diffusion model, a Python backend API for serving the model, and an interactive frontend web application.
 
 Live Demo: mnist-image-ddpm.vercel.app
