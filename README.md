@@ -67,4 +67,4 @@ Frontend: Deployed and hosted globally on Vercel at mnist-image-ddpm.vercel.app.
 Contributions, issues, and feature requests are welcome! Feel free to check the issues page if you want to contribute to the project.
 
 📝 License
-This project is open-source. Please check the repository settings or contact the author for specific licensing details.
+This project is open-source. Please check the repository settings or contact me.
