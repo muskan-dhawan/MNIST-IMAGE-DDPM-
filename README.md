@@ -1,7 +1,7 @@
 ### 🎨 Bridging Noise and Creativity: MNIST Generation via DDPM
 An elegant, end-to-end generative AI ecosystem that breathes structure into chaos. This project implements a Denoising Diffusion Probabilistic Model (DDPM) from scratch to synthesize crystal-clear handwritten digits from the iconic MNIST dataset. It bridges deep learning research with production engineering by pairing a custom-trained U-Net diffusion model with a Python backend API and a dynamic web interface.
 
-✨ Experience the Magic Live: mnist-image-ddpm.vercel.app
+✨ Experience the Magic Live: https://mnist-image-ddpm.vercel.app/
 
 🔮 The Core Concept: Static to Masterpiece
 Unlike traditional generative architectures (like GANs), which attempt to jump from noise to an image in a single step, DDPM relies on a beautiful mathematical dance of gradual corruption and meticulous restoration.
