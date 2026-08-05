@@ -1,0 +1,2 @@
+DDPM FID (feature=64): 0.04
+VAE FID (feature=64): 0.06

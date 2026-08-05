@@ -1,0 +1,6 @@
+MNIST Digit Generation Evaluation (10,000 samples vs Test Set)
+Feature space: InceptionV3 (feature=2048)
+DDPM Guidance Scale: 3.0
+
+DDPM FID Score: 10.0358
+Class-Conditional VAE FID: 19.3088

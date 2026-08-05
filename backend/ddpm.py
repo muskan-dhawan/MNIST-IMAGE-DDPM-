@@ -133,10 +133,19 @@ class UNet(nn.Module):
 # ---------------------------------------------------------------------------
 # Sampling helpers
 # ---------------------------------------------------------------------------
-def _p_sample_step(x, eps, beta, alpha, alpha_cum):
-    coef1 = 1.0 / math.sqrt(alpha)
-    coef2 = (1.0 - alpha) / math.sqrt(1.0 - alpha_cum)
-    mean = coef1 * (x - coef2 * eps)
+def _p_sample_step(x, eps, beta, alpha, alpha_cum, step=1):
+    # Static thresholding: predict x0 and clamp to [-1, 1] to prevent CFG saturation artifacts
+    pred_x0 = (x - math.sqrt(1.0 - alpha_cum) * eps) / math.sqrt(alpha_cum)
+    pred_x0 = torch.clamp(pred_x0, -1.0, 1.0)
+    
+    # Compute posterior mean using clamped pred_x0
+    alpha_cum_prev = _alpha_hats[step - 1] if step > 0 else 1.0
+    coef_x0 = math.sqrt(alpha_cum_prev) * beta / (1.0 - alpha_cum)
+    coef_xt = math.sqrt(alpha) * (1.0 - alpha_cum_prev) / (1.0 - alpha_cum)
+    mean = coef_x0 * pred_x0 + coef_xt * x
+
+    if step == 0:
+        return mean
     sigma = math.sqrt(beta)
     return mean + sigma * torch.randn_like(x)
 
@@ -156,9 +165,53 @@ def gen_samples(model, n_samples, conditioning, guidance_scale, seed=None):
         eps_u = model(x, t_batch, null_cond)
         eps_c = model(x, t_batch, cond)
         eps = eps_u + guidance_scale * (eps_c - eps_u)
-        x = _p_sample_step(x, eps, _betas[step], _alphas[step], _alpha_hats[step])
+        x = _p_sample_step(x, eps, _betas[step], _alphas[step], _alpha_hats[step], step)
 
-    return (x + 1.0) * 0.5          # → [0, 1]
+    return torch.clamp((x + 1.0) * 0.5, 0.0, 1.0)          # → [0, 1]
+
+
+@torch.inference_mode()
+def gen_samples_ddim(model, n_samples, conditioning, guidance_scale, ddim_steps=50, seed=None):
+    """Accelerated DDIM deterministic sampling (Song et al., 2021) with FP16 Tensor Core speedup."""
+    device = next(model.parameters()).device
+    if seed is not None:
+        torch.manual_seed(seed)
+
+    x = torch.randn(n_samples, CH, IMG_SZ, IMG_SZ, device=device)
+    cond = torch.tensor(conditioning, dtype=torch.long, device=device)
+    null_cond = torch.full((n_samples,), NULL_CLS, dtype=torch.long, device=device)
+
+    step_indices = np.linspace(0, TIMESTEPS - 1, ddim_steps, dtype=int)[::-1]
+    use_fp16 = (device.type == "cuda")
+
+    for idx, step in enumerate(step_indices):
+        t_batch = torch.full((n_samples,), step, dtype=torch.long, device=device)
+        
+        with torch.autocast(device_type="cuda", dtype=torch.float16, enabled=use_fp16):
+            # Batched forward pass: combine unconditional and conditional evaluation
+            x_double = torch.cat([x, x], dim=0)
+            t_double = torch.cat([t_batch, t_batch], dim=0)
+            c_double = torch.cat([null_cond, cond], dim=0)
+            eps_double = model(x_double, t_double, c_double)
+            eps_u, eps_c = eps_double.chunk(2, dim=0)
+            eps = eps_u + guidance_scale * (eps_c - eps_u)
+
+        alpha_hat_t = _alpha_hats[step]
+        prev_step = step_indices[idx + 1] if idx + 1 < len(step_indices) else -1
+        alpha_hat_prev = _alpha_hats[prev_step] if prev_step >= 0 else 1.0
+
+        pred_x0 = (x - math.sqrt(1.0 - alpha_hat_t) * eps) / math.sqrt(alpha_hat_t)
+        pred_x0 = torch.clamp(pred_x0, -1.0, 1.0)  # Static thresholding
+        eps_clamped = (x - math.sqrt(alpha_hat_t) * pred_x0) / math.sqrt(1.0 - alpha_hat_t)
+
+        if prev_step == -1:
+            x = pred_x0
+        else:
+            dir_xt = math.sqrt(1.0 - alpha_hat_prev) * eps_clamped
+            x = math.sqrt(alpha_hat_prev) * pred_x0 + dir_xt
+
+    return torch.clamp((x + 1.0) * 0.5, 0.0, 1.0)
+
 
 
 @torch.no_grad()
@@ -173,7 +226,7 @@ def gen_samples_from_image(model, x_start, strength, conditioning, guidance_scal
     t_start = int(strength * TIMESTEPS)
 
     if t_start == 0:
-        return (x_start + 1.0) * 0.5
+        return torch.clamp((x_start + 1.0) * 0.5, 0.0, 1.0)
 
     noise = torch.randn_like(x_start)
     alpha_hat_t = _alpha_hats[t_start - 1]
@@ -187,6 +240,6 @@ def gen_samples_from_image(model, x_start, strength, conditioning, guidance_scal
         eps_u = model(x, t_batch, null_cond)
         eps_c = model(x, t_batch, cond)
         eps = eps_u + guidance_scale * (eps_c - eps_u)
-        x = _p_sample_step(x, eps, _betas[step], _alphas[step], _alpha_hats[step])
+        x = _p_sample_step(x, eps, _betas[step], _alphas[step], _alpha_hats[step], step)
 
-    return (x + 1.0) * 0.5
+    return torch.clamp((x + 1.0) * 0.5, 0.0, 1.0)

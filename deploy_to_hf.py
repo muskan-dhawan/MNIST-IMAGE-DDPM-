@@ -31,7 +31,7 @@ def deploy_code():
             repo_id=repo_id,
             repo_type="space",
             commit_message="Deploy updated app.py with HF Hub download logic",
-            ignore_patterns=["__pycache__/*", "*.pyc", "Dockerfile", "scratch_test.py", "train_classifier.py", "*.h5", "*.keras", "schemas.py"]
+            ignore_patterns=["__pycache__/*", "*.pyc", "Dockerfile", "scratch_test.py", "train_classifier.py", "*.h5", "*.keras", "*.pt", "schemas.py", ".venv/*", "scratch_*"]
         )
         print("Deploy complete! Your Space is now restarting with the new code.")
     except Exception as e:
