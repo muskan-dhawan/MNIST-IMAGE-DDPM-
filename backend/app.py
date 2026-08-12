@@ -33,7 +33,7 @@ from classifier import MNISTClassifier
 # ---------------------------------------------------------------------------
 # Model loading — uses hf_hub_download to properly resolve LFS pointers
 # ---------------------------------------------------------------------------
-REPO_ID = "shivv01/mnist-backend"
+REPO_ID = "muskan-dhawan/mnist-backend"
 
 unet_model = None
 classifier_model = None

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Database, RefreshCw, LayoutGrid, Play, Zap, PenTool, Trash2, Eye } from 'lucide-react';
 import './index.css';
 
-const API_URL = import.meta.env.VITE_API_URL || "https://shivv01-mnist-backend.hf.space";
+const API_URL = import.meta.env.VITE_API_URL || "https://muskan-dhawan-mnist-backend.hf.space";
 const CANVAS_SIZE = 280; // 10x MNIST resolution for comfortable drawing
 
 // ---------------------------------------------------------------------------

@@ -22,7 +22,7 @@ def deploy_code():
         sys.exit(1)
         
     # The user's actual Space repo for the app
-    repo_id = "shivv01/mnist-backend"
+    repo_id = "muskan-dhawan/mnist-backend"
     
     print(f"\nDeploying the latest code to Space '{repo_id}'...")
     try:
